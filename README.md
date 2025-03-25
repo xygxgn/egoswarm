@@ -1,3 +1,263 @@
+# Modified EGO-Swarm
+This repository mainly modify the source code of EGO-Swarm in three aspects:
+* rename the catkin workspace
+  * `mv ego-planner-swarm egoswarm`
+* modify the extrinsic of depth camera to imu
+  * `gedit ~/catkin_ws/src/egoswarm/src/planner/plan_env/src/grid_map.cpp`
+  * modify line 109-110
+    ```
+    extrinsic_sub_ = node_.subscribe<nav_msgs::Odometry>(
+        "extrinsic", 10, &GridMap::extrinsicCallback, this); //sub
+    ```
+  * `gedit ~/catkin_ws/src/egoswarm/src/planner/plan_manage/src/traj_server.cpp`
+  * Comment line 254 and add
+    ```
+    nh.param("traj_server/init_yaw", last_yaw_, 0.0);
+    ```
+* Add or modify **.launch files** for ego_planner.
+  * `cd ~/catkin_ws/src/egoswarm/src/planner/plan_manage/launch/`
+  * `touch advanced_param_exp.xml`
+  * `gedit ~/catkin_ws/src/egoswarm/src/planner/plan_manage/launch/advanced_param_exp.xml`
+  * fill with
+    ```
+    <launch>
+        <arg name="map_size_x_"/>
+        <arg name="map_size_y_"/>
+        <arg name="map_size_z_"/>
+
+        <arg name="odometry_topic"/>
+        <arg name="camera_pose_topic"/>
+        <arg name="depth_topic"/>
+        <arg name="cloud_topic"/>
+        <arg name="extrinsic_topic"/>
+
+        <arg name="cx"/>
+        <arg name="cy"/>
+        <arg name="fx"/>
+        <arg name="fy"/>
+
+        <arg name="max_vel"/>
+        <arg name="max_acc"/>
+        <arg name="planning_horizon"/>
+
+        <arg name="point_num"/>
+        <arg name="point0_x"/>
+        <arg name="point0_y"/>
+        <arg name="point0_z"/>
+        <arg name="point1_x"/>
+        <arg name="point1_y"/>
+        <arg name="point1_z"/>
+        <arg name="point2_x"/>
+        <arg name="point2_y"/>
+        <arg name="point2_z"/>
+        <arg name="point3_x"/>
+        <arg name="point3_y"/>
+        <arg name="point3_z"/>
+        <arg name="point4_x"/>
+        <arg name="point4_y"/>
+        <arg name="point4_z"/>
+
+        <arg name="flight_type"/>
+        <arg name="use_distinctive_trajs"/>
+
+        <arg name="obj_num_set"/>
+
+        <arg name="drone_id"/>
+
+
+        <!-- main node -->
+        <!-- <node pkg="ego_planner" name="ego_planner_node" type="ego_planner_node" output="screen" launch-prefix="valgrind"> -->
+        <node pkg="ego_planner" name="drone_$(arg drone_id)_ego_planner_node" type="ego_planner_node" output="screen">
+        
+            <remap from="~odom_world" to="/drone_$(arg drone_id)_$(arg odometry_topic)"/>
+            <remap from="~planning/bspline" to = "/drone_$(arg drone_id)_planning/bspline"/>
+            <remap from="~planning/data_display" to = "/drone_$(arg drone_id)_planning/data_display"/>
+            <remap from="~planning/broadcast_bspline_from_planner" to = "/broadcast_bspline"/>
+            <remap from="~planning/broadcast_bspline_to_planner" to = "/broadcast_bspline"/>
+
+            <remap from="~grid_map/odom" to="/drone_$(arg drone_id)_$(arg odometry_topic)"/>
+            <remap from="~grid_map/cloud" to="/drone_$(arg drone_id)_$(arg cloud_topic)"/>
+            <remap from="~grid_map/pose"   to = "/drone_$(arg drone_id)_$(arg camera_pose_topic)"/> 
+            <remap from="~grid_map/depth" to = "/drone_$(arg drone_id)_$(arg depth_topic)"/>
+            <remap from="~grid_map/extrinsic" to = "/drone_$(arg drone_id)_$(arg extrinsic_topic)"/>
+            
+
+            <!-- planning fsm -->
+            <param name="fsm/flight_type" value="$(arg flight_type)" type="int"/>
+            <param name="fsm/thresh_replan_time" value="1.0" type="double"/>
+            <param name="fsm/thresh_no_replan_meter" value="1.0" type="double"/>
+            <param name="fsm/planning_horizon" value="$(arg planning_horizon)" type="double"/> <!--always set to 1.5 times grater than sensing horizen-->
+            <param name="fsm/planning_horizen_time" value="3" type="double"/>
+            <param name="fsm/emergency_time" value="1.0" type="double"/>
+            <param name="fsm/realworld_experiment" value="false"/>
+            <param name="fsm/fail_safe" value="true"/>
+
+            <param name="fsm/waypoint_num" value="$(arg point_num)" type="int"/>
+            <param name="fsm/waypoint0_x" value="$(arg point0_x)" type="double"/>
+            <param name="fsm/waypoint0_y" value="$(arg point0_y)" type="double"/>
+            <param name="fsm/waypoint0_z" value="$(arg point0_z)" type="double"/>
+            <param name="fsm/waypoint1_x" value="$(arg point1_x)" type="double"/>
+            <param name="fsm/waypoint1_y" value="$(arg point1_y)" type="double"/>
+            <param name="fsm/waypoint1_z" value="$(arg point1_z)" type="double"/>
+            <param name="fsm/waypoint2_x" value="$(arg point2_x)" type="double"/>
+            <param name="fsm/waypoint2_y" value="$(arg point2_y)" type="double"/>
+            <param name="fsm/waypoint2_z" value="$(arg point2_z)" type="double"/>
+            <param name="fsm/waypoint3_x" value="$(arg point3_x)" type="double"/>
+            <param name="fsm/waypoint3_y" value="$(arg point3_y)" type="double"/>
+            <param name="fsm/waypoint3_z" value="$(arg point3_z)" type="double"/>
+            <param name="fsm/waypoint4_x" value="$(arg point4_x)" type="double"/>
+            <param name="fsm/waypoint4_y" value="$(arg point4_y)" type="double"/>
+            <param name="fsm/waypoint4_z" value="$(arg point4_z)" type="double"/>
+
+            <param name="grid_map/resolution"      value="0.1" /> 
+            <param name="grid_map/map_size_x"   value="$(arg map_size_x_)" /> 
+            <param name="grid_map/map_size_y"   value="$(arg map_size_y_)" /> 
+            <param name="grid_map/map_size_z"   value="$(arg map_size_z_)" /> 
+            <param name="grid_map/local_update_range_x"  value="5.5" /> 
+            <param name="grid_map/local_update_range_y"  value="5.5" /> 
+            <param name="grid_map/local_update_range_z"  value="4.5" /> 
+            <param name="grid_map/obstacles_inflation"     value="0.099" /> 
+            <param name="grid_map/local_map_margin" value="10"/>
+            <param name="grid_map/ground_height"        value="-0.01"/>
+            <!-- camera parameter -->
+            <param name="grid_map/cx" value="$(arg cx)"/>
+            <param name="grid_map/cy" value="$(arg cy)"/>
+            <param name="grid_map/fx" value="$(arg fx)"/>
+            <param name="grid_map/fy" value="$(arg fy)"/>
+            <!-- depth filter -->
+            <param name="grid_map/use_depth_filter" value="true"/>
+            <param name="grid_map/depth_filter_tolerance" value="0.15"/>
+            <param name="grid_map/depth_filter_maxdist"   value="5.0"/>
+            <param name="grid_map/depth_filter_mindist"   value="0.2"/>
+            <param name="grid_map/depth_filter_margin"    value="2"/>
+            <param name="grid_map/k_depth_scaling_factor" value="1000.0"/>
+            <param name="grid_map/skip_pixel" value="2"/>
+            <!-- local fusion -->
+            <param name="grid_map/p_hit"  value="0.65"/>
+            <param name="grid_map/p_miss" value="0.35"/>
+            <param name="grid_map/p_min"  value="0.12"/>
+            <param name="grid_map/p_max"  value="0.90"/>
+            <param name="grid_map/p_occ"  value="0.80"/>
+            <param name="grid_map/min_ray_length" value="0.1"/>
+            <param name="grid_map/max_ray_length" value="4.5"/>
+
+            <param name="grid_map/virtual_ceil_height"   value="2.9"/>
+            <param name="grid_map/visualization_truncate_height"   value="1.8"/>
+            <param name="grid_map/show_occ_time"  value="false"/>
+            <param name="grid_map/pose_type"     value="1"/>  
+            <param name="grid_map/frame_id"      value="world"/>
+
+        <!-- planner manager -->
+            <param name="manager/max_vel" value="$(arg max_vel)" type="double"/>
+            <param name="manager/max_acc" value="$(arg max_acc)" type="double"/>
+            <param name="manager/max_jerk" value="4" type="double"/>
+            <param name="manager/control_points_distance" value="0.4" type="double"/>
+            <param name="manager/feasibility_tolerance" value="0.05" type="double"/>
+            <param name="manager/planning_horizon" value="$(arg planning_horizon)" type="double"/>
+            <param name="manager/use_distinctive_trajs" value="$(arg use_distinctive_trajs)" type="bool"/>
+            <param name="manager/drone_id" value="$(arg drone_id)"/>
+
+        <!-- trajectory optimization -->
+            <param name="optimization/lambda_smooth" value="1.0" type="double"/>
+            <param name="optimization/lambda_collision" value="0.5" type="double"/>
+            <param name="optimization/lambda_feasibility" value="0.1" type="double"/>
+            <param name="optimization/lambda_fitness" value="1.0" type="double"/>
+            <param name="optimization/dist0" value="0.5" type="double"/>
+            <param name="optimization/swarm_clearance" value="0.5" type="double"/>
+            <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>
+            <param name="optimization/max_acc" value="$(arg max_acc)" type="double"/>
+
+            <param name="bspline/limit_vel" value="$(arg max_vel)" type="double"/>
+            <param name="bspline/limit_acc" value="$(arg max_acc)" type="double"/>
+            <param name="bspline/limit_ratio" value="1.1" type="double"/>
+
+        <!-- objects prediction -->
+            <param name="prediction/obj_num" value="$(arg obj_num_set)" type="int"/>
+            <param name="prediction/lambda" value="1.0" type="double"/>
+            <param name="prediction/predict_rate" value="1.0" type="double"/>
+        </node>
+    </launch>
+    ```
+  * `touch single_run_in_exp.launch`
+  * `gedit ~/catkin_ws/src/egoswarm/src/planner/plan_manage/launch/single_run_in_exp.launch`
+  * fill with
+    ```
+    <launch>
+        <!-- number of moving objects -->
+        <arg name="obj_num" value="10" />
+        <arg name="drone_id" value="0"/>
+
+        <arg name="map_size_x" value="100"/>
+        <arg name="map_size_y" value="50"/>
+        <arg name="map_size_z" value="3.0"/>
+        <arg name="odom_topic" value="/vins_estimator/imu_propagate"/>
+        
+        <!-- main algorithm params -->
+        <include file="$(find ego_planner)/launch/advanced_param_exp.xml">
+            <arg name="drone_id" value="$(arg drone_id)"/>
+            <arg name="map_size_x_" value="$(arg map_size_x)"/>
+            <arg name="map_size_y_" value="$(arg map_size_y)"/>
+            <arg name="map_size_z_" value="$(arg map_size_z)"/>
+            <arg name="odometry_topic" value="$(arg odom_topic)"/>
+            <arg name="obj_num_set" value="$(arg obj_num)" />
+            <!-- camera pose: transform of camera frame in the world frame -->
+            <!-- depth topic: depth image, 640x480 by default -->
+            <!-- don't set cloud_topic if you already set these ones! -->
+            <arg name="camera_pose_topic" value="nouse1"/>
+            <arg name="depth_topic" value="/camera/depth/image_rect_raw"/>
+            <arg name="extrinsic_topic" value="/vins_estimator/extrinsic"/>
+            <!-- topic of point cloud measurement, such as from LIDAR  -->
+            <!-- don't set camera pose and depth, if you already set this one! -->
+            <arg name="cloud_topic" value="nouse2"/>
+            <!-- intrinsic params of the depth camera -->
+            <arg name="cx" value="323.3316345214844"/>
+            <arg name="cy" value="234.95498657226562"/>
+            <arg name="fx" value="384.39654541015625"/>
+            <arg name="fy" value="384.39654541015625"/>
+            <!-- maximum velocity and acceleration the drone will reach -->
+            <arg name="max_vel" value="0.5" />
+            <arg name="max_acc" value="6.0" />
+            <!--always set to 1.5 times grater than sensing horizen-->
+            <arg name="planning_horizon" value="6" />
+            <arg name="use_distinctive_trajs" value="false" />
+            <!-- 1: use 2D Nav Goal to select goal  -->
+            <!-- 2: use global waypoints below  -->
+            <arg name="flight_type" value="1" />
+            <!-- global waypoints -->
+            <!-- It generates a piecewise min-snap traj passing all waypoints -->
+            <arg name="point_num" value="1" />
+            <arg name="point0_x" value="15" />
+            <arg name="point0_y" value="0" />
+            <arg name="point0_z" value="1" />
+            <arg name="point1_x" value="0.0" />
+            <arg name="point1_y" value="0.0" />
+            <arg name="point1_z" value="1.0" />
+            <arg name="point2_x" value="15.0" />
+            <arg name="point2_y" value="0.0" />
+            <arg name="point2_z" value="1.0" />
+            <arg name="point3_x" value="0.0" />
+            <arg name="point3_y" value="0.0" />
+            <arg name="point3_z" value="1.0" />
+            <arg name="point4_x" value="15.0" />
+            <arg name="point4_y" value="0.0" />
+            <arg name="point4_z" value="1.0" />
+        </include>
+        <!-- trajectory server -->
+        <node pkg="ego_planner" name="drone_$(arg drone_id)_traj_server" type="traj_server" output="screen">
+            <!-- <remap from="position_cmd" to="/setpoints_cmd"/> -->
+            <remap from="~planning/bspline" to="drone_$(arg drone_id)_planning/bspline"/>
+            <param name="traj_server/time_forward" value="1.0" type="double"/>
+            <param name="traj_server/init_yaw" value="1.57" type="double"/>
+        </node>
+    </launch>
+    ```
+  * `cd ~/catkin_ws/src/ego-planner-swarm/ && catkin_make`
+  * `source ~/catkin_ws/src/ego-planner-swarm/devel/setup.bash`
+  * `roslaunch ego_planner simple_run.launch`
+
+
+If you find this work useful or interesting, please kindly give us a star :star:, thanks!
+
 # Update: ROS2 Support
 For the ROS2 version, please refer to the branch [ros2_version](https://github.com/ZJU-FAST-Lab/ego-planner-swarm/tree/ros2_version).
 
