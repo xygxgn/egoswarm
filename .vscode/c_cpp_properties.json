@@ -6,9 +6,6 @@
                 "limitSymbolsToIncludedHeaders": false
             },
             "includePath": [
-                "/opt/ros/noetic/include/**",
-                "/opt/ros/noetic/include",
-                "/usr/include/**",
                 "${workspaceFolder}/src/planner/plan_manage/include",
                 "${workspaceFolder}/src/planner/bspline_opt/include",
                 "${workspaceFolder}/src/planner/path_searching/include",
@@ -22,13 +19,16 @@
                 "${workspaceFolder}/src/uav_simulator/so3_control/include",
                 "${workspaceFolder}/src/uav_simulator/so3_quadrotor_simulator/include",
                 "${workspaceFolder}/devel/include/**",
-                "~/catkin_pkg/src/cv_bridge/include/**"
+                "/opt/ros/noetic/include/**",
+                "/usr/include/eigen3",
+                "/usr/include/opencv4",
+                "/usr/include/pcl-1.10"
             ],
             "name": "ROS",
-            "intelliSenseMode": "clang-x64",
+            "intelliSenseMode": "linux-clang-x64",
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "gnu11",
-            "cppStandard": "gnu++11"
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14"
         }
     ],
     "version": 4
